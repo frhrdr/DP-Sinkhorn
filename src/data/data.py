@@ -5,8 +5,10 @@
 # for DP-Sinkhorn. To view a copy of this license, see the LICENSE file.
 # ---------------------------------------------------------------
 import torch
+import torchvision.datasets as dset
 from torchvision.datasets import MNIST, FashionMNIST, CIFAR10, SVHN
-from .CelebA import MyCelebA
+from .CelebA import CelebAWrapper
+from .imagenet32 import Imagenet32Dataset
 import torchvision.transforms as transforms
 
 import numpy as np
@@ -16,7 +18,7 @@ import os
 def add_data_args(parser):
     parser.add_argument("--dataset", type=str,
                         choices=['mnist', 'fashion_mnist', 'cifar', 'svhn', 'svhn_28', 'celeb_32', 'celeb_32_2',
-                                 'stackedmnist', 'mnist_bce', 'fashion_mnist_bce'], default='mnist')
+                                 'stackedmnist', 'mnist_bce', 'fashion_mnist_bce', 'imagenet_32_2', 'imagenet_32_10'], default='mnist')
     parser.add_argument("--datadir", type = str, default='datasets')
     return parser
 
@@ -112,11 +114,42 @@ datasets = {
         'transform': transforms.Compose([transforms.Resize((32, 32)),
                                          transforms.ToTensor(),
                                          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
-        'num_examples': 60000,
-        'fetch_fn': MyCelebA,
+        'num_examples': 202_599,
+        # 'fetch_fn': MyCelebA,
+        'fetch_fn': lambda path='', split='', transform='', download='': CelebAWrapper(path,
+                                                                                       transform),
+        # 'fetch_fn': lambda path='', split='', transform='', download='': dset.ImageFolder(path, transform),
         'metadata': {
             'img_dim': (3, 32, 32),
             'label_dim': 2,
+            'display_labels': None,
+            'cmap': None
+        }
+    },
+
+    'imagenet_32_2': {
+        'transform': transforms.Compose([  # transforms.ToTensor(),
+                                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
+        'num_examples': 1_281_167,
+        'fetch_fn': lambda path='', split='', transform='', download='': Imagenet32Dataset(path, transform,
+                                                                                 n_random_labels=2),
+        'metadata': {
+            'img_dim': (3, 32, 32),
+            'label_dim': 2,
+            'display_labels': None,
+            'cmap': None
+        }
+    },
+
+    'imagenet_32_10': {
+        'transform': transforms.Compose([  # transforms.ToTensor(),
+                                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
+        'num_examples': 1281167,
+        'fetch_fn': lambda path='', split='', transform='', download='': Imagenet32Dataset(path, transform,
+                                                                               n_random_labels=10),
+        'metadata': {
+            'img_dim': (3, 32, 32),
+            'label_dim': 10,
             'display_labels': None,
             'cmap': None
         }
@@ -139,8 +172,13 @@ def fetch_data(dataset_name, datadir, training=True, download=True, as_array=Fal
     """
     dataset = datasets[dataset_name]
 
-    path = os.path.join(datadir, dataset_name.split('_')[0])
-    if dataset_name in ['svhn', 'shvn_28', 'celeb_32', 'celeb_32_2']:
+    if dataset_name.startswith('celeb_32_2'):
+        path = os.path.join(datadir, 'img_align_celeba')
+    elif dataset_name.startswith('imagenet_32_2'):
+        path = datadir  # os.path.join(datadir, 'Imagenet32_train')
+    else:
+        path = os.path.join(datadir, dataset_name.split('_')[0])
+    if dataset_name in ['svhn', 'shvn_28', 'celeb_32', 'celeb_32_2', 'imagenet_32_2', 'imagenet_32_10']:
         s = 'train' if training else 'valid'
         train_data = dataset['fetch_fn'](path, split=s, transform=dataset['transform'],
                                          download=not 'celeb' in dataset_name)
@@ -158,7 +196,7 @@ def fetch_data(dataset_name, datadir, training=True, download=True, as_array=Fal
                 x = x[inds]
                 y = y[inds]
 
-        elif dataset_name in ['celeb_32_2', 'svhn_28']:
+        elif dataset_name in ['celeb_32_2', 'svhn_28', 'imagenet_32_2', 'imagenet_32_10']:
             xs = []
             ys = []
             if num_examples > 0:

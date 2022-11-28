@@ -26,6 +26,9 @@ def compute_loss(g, d, img, label, loss_fn, args, metadata):
 
     # concatenate label one-hot encoding to form a joint sample ~ p(x,y)
     flat_img = img.view(batch_size, -1).float()
+    # print(flat_img.shape)
+    # print(label.shape)
+
     if args.class_cond:
         flat_img_with_y = torch.cat([flat_img,
                                      g.embed_multiplier * F.one_hot(label, metadata['label_dim']).float()], dim=1)
@@ -51,7 +54,6 @@ def compute_loss(g, d, img, label, loss_fn, args, metadata):
         gen_y = None
 
     gen_img = g(z, gen_y)
-
 
     if g.training and args.dp and args.mechanism == 'img_grad':
         gen_img.register_hook(
@@ -159,7 +161,7 @@ def train_step(models, optimizers, img, label, idx, loss_fn, args, metadata):
     g_loss, _, loss_mets = compute_loss(g, d, img, label, loss_fn, args, metadata)
     g_loss.backward()
 
-    if args.global_step % 20 == 0:
+    if args.dp and args.global_step % 20 == 0:
         eps = calc_epsilon(args.batch_size, args.noise_multiplier, args.delta, len(train_data), global_step, args.sampling)
         loss_mets.merge({'epsilon':eps})
         if eps >= args.target_epsilon:
@@ -227,7 +229,7 @@ if __name__ == '__main__':
     parser.add_argument("--d_hidden_units", default=1000, type=int)
     parser.add_argument("--d_out_dim", default=1, type=int)
     parser.add_argument("--d_lr", default=1e-2, type=float)
-    parser.add_argument("--d_steps", default=10, type=int)
+    parser.add_argument("--d_steps", default=0, type=int)
 
     # sinkhorn loss
     parser.add_argument("--sinkhorn_eps", type=float, default=0.2)
@@ -236,7 +238,7 @@ if __name__ == '__main__':
     parser.add_argument("--sinkhorn_eps_step_every", default=None, type=int)
 
     # sinkhorn cost
-    parser.add_argument("--cost", default="default", choices=['default', 'rkhs', 'adv_only', 'weighted', 'l1+l2'])
+    parser.add_argument("--cost", default="l1+l2", choices=['default', 'rkhs', 'adv_only', 'weighted', 'l1+l2'])
     parser.add_argument("--mixture_fraction", default=1.0, type=float)
 
     # privacy params

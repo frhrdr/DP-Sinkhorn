@@ -19,8 +19,8 @@ from src.train_mnist_classifier import torch_evaluate
 from src.fid import fid
 from src.data import fetch_data
 from src.architecture import add_generator_args, build_generator
-
-
+from src.pytorch_fid_utils import compute_fid, fid_preproc
+from src.trainer import eval
 
 def tensor_to_arr(t):
     arr = t.detach().cpu().numpy().transpose(0,2,3,1)
@@ -56,35 +56,35 @@ def sorted_grid_celeb(img, label):
 
     return tensor_to_grid(grid)
 
-def get_activations(img, inception_dir, fid_checkpoint_dir=None):
-    if (fid_checkpoint_dir is not None and
-            (os.path.exists(os.path.join(fid_checkpoint_dir, 'mu.npy')) and
-             os.path.exists(os.path.join(fid_checkpoint_dir, 'cov.npy')))):
-
-        mu_path = os.path.join(fid_checkpoint_dir, 'mu.npy')
-        cov_path = os.path.join(fid_checkpoint_dir, 'cov.npy')
-
-        print('| computed statistics found at: {}, {}'.format(mu_path, cov_path))
-
-        return np.load(mu_path), np.load(cov_path)
-
-    else:
-
-        png = tensor_to_arr(img)
-        inception_dir = fid.check_or_download_inception(inception_dir)
-        fid.create_inception_graph(str(inception_dir))
-
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            mu, cov = fid.calculate_activation_statistics(png, sess, verbose=True)
-
-        if fid_checkpoint_dir is not None:
-            np.save(os.path.join(fid_checkpoint_dir, 'mu.npy'), mu)
-            np.save(os.path.join(fid_checkpoint_dir, 'cov.npy'), cov)
-
-        return mu, cov
+# def get_activations(img, inception_dir, fid_checkpoint_dir=None):
+#     if (fid_checkpoint_dir is not None and
+#             (os.path.exists(os.path.join(fid_checkpoint_dir, 'mu.npy')) and
+#              os.path.exists(os.path.join(fid_checkpoint_dir, 'cov.npy')))):
+#
+#         mu_path = os.path.join(fid_checkpoint_dir, 'mu.npy')
+#         cov_path = os.path.join(fid_checkpoint_dir, 'cov.npy')
+#
+#         print('| computed statistics found at: {}, {}'.format(mu_path, cov_path))
+#
+#         return np.load(mu_path), np.load(cov_path)
+#
+#     else:
+#
+#         png = tensor_to_arr(img)
+#         inception_dir = fid.check_or_download_inception(inception_dir)
+#         fid.create_inception_graph(str(inception_dir))
+#
+#         config = tf.ConfigProto()
+#         config.gpu_options.allow_growth = True
+#         with tf.Session(config=config) as sess:
+#             sess.run(tf.global_variables_initializer())
+#             mu, cov = fid.calculate_activation_statistics(png, sess, verbose=True)
+#
+#         if fid_checkpoint_dir is not None:
+#             np.save(os.path.join(fid_checkpoint_dir, 'mu.npy'), mu)
+#             np.save(os.path.join(fid_checkpoint_dir, 'cov.npy'), cov)
+#
+#         return mu, cov
 
 
 def average_checkpoints_load(path, start, k):
@@ -197,8 +197,25 @@ def run_eval_pipeline_checkpoint(checkpoint_path, gen_batch_size, start, k, args
     print(logreg_acc, mlp_acc, cnn_acc, fid_score)
 
 
+def pt_fid_eval(models, args, gen_batch_size):
+    # args required: device noise cost print_interval dataset datadir
+    (_val_img, _val_label), metadata = fetch_data(args.dataset, args.datadir, training=False,
+                                                  download=False, as_array=True)
+    gen_img, gen_label = generate(models,
+                                  num_examples=5000,
+                                  batch_size=gen_batch_size,
+                                  fixed=False,
+                                  args=args, metadata=metadata)
+    print('| generated {} synthetic examples'.format(len(gen_label)))
+    gen_img = gen_img.to(args.device)
+    # gen_label = gen_label.to(args.device)
+    # fid score
+    fid = compute_fid(fid_preproc(gen_img, (0.5, 0.5)), args)
+
+
 def extract_acc(res):
     return [(acc_key, res[0][acc_key]) for acc_key in [k for k in res[0].keys() if k[:3] == 'acc']]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

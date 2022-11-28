@@ -20,7 +20,7 @@ from .rdp_accountant import get_privacy_spent, compute_rdp_sample_without_replac
 def add_privacy_args(parser):
     parser.add_argument("--dp", default=False, action='store_true')
     parser.add_argument("--report_bdp", default=False, action='store_true')
-    parser.add_argument("--sampling", default='subset', choices=['subset', 'poisson'])
+    parser.add_argument("--sampling", default='poisson', choices=['subset', 'poisson'])
     parser.add_argument("--mechanism", default='img_grad', choices=['img_grad'])
 
     parser.add_argument("--l2_norm_clip", type=float, default=0.5)

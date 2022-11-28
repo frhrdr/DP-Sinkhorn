@@ -1,4 +1,8 @@
-# Pytorch Implementation of "Don't Generate Me: Training Differentially Private Generative Models with Sinkhorn Divergence" (Neurips 2021)
+# Fork of DP-Sinkhorn
+
+added support for Imagenet 32x32 for some baselines (not for general use. please use the original repo instead)
+
+Text below from original repo:
 
 Tianshi Cao, Alex Bie, Arash Vahdat, Sanja Fidler, Karsten Kreis
 

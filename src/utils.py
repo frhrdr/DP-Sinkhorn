@@ -134,7 +134,6 @@ def histogram_plot(values, title, display_labels=None):
     return im2
 
 
-
 def confusion_matrix_plot(values, display_labels=None):
     values = np.round(values, 3)
     plt.rcParams["figure.figsize"] = [12, 9]

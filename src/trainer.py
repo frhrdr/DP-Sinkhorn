@@ -15,7 +15,8 @@ from .data import fetch_data
 from .train_mnist_classifier import torch_evaluate
 import os, time, json
 
-DEBUG=False
+
+DEBUG = False
 # function stubs to implement
 def val_step(models, img, label, args, metadata):
     return None
@@ -330,3 +331,6 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
     np.save(os.path.join(args.expdir, 'losses_mean_epoch.npy'), np.array(args.train_losses_mean))
     with open(os.path.join(args.expdir, "results.json"), "w") as f:
         json.dump({'best_score': best_score}, f)
+    x_fin, y_fin = generate(models, args.n_final_dataset_samples, args.g_batch_size, False, args,
+                            metadata)
+    np.savez(os.path.join(args.expdir, 'final_gen_data.npz'), x=x_fin.numpy(), y=y_fin.numpy())

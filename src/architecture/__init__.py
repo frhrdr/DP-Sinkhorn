@@ -6,6 +6,7 @@
 # ---------------------------------------------------------------
 from .biggan.biggan import BigGan, Discriminator, SmallDiscriminator
 from .dcgan import ConvCondGenerator, ConvCondSqGenerator
+from .resnet_gen import ResnetG
 
 def add_generator_args(parser):
     parser.add_argument("--g_type", default='joint',
@@ -17,7 +18,7 @@ def add_generator_args(parser):
     parser.add_argument("--hidden_dim", type=int, default=64)
     parser.add_argument("--num_hidden_layers", type=int, default=1)
     parser.add_argument("--embed_multiplier", type=float, default=15)
-    parser.add_argument("--act_function", default="tttn")
+    parser.add_argument("--act_function", default="lllt")
     return parser
 
 
@@ -45,7 +46,12 @@ def build_generator(args, img_dim, label_dim):
                 fs=args.act_function
             )
 
+    elif args.g_type == 'resnetG':
+      g = ResnetG(args.latent_dim, img_dim, 64, 32, True, False, 'tanh')
+    else:
+      raise ValueError
+
     print('| using {} generator'.format(g.name()))
-    print(g)
+    # print(g)
     print('| number of trainable parameters: {}'.format(g.num_trainable_params))
     return g
