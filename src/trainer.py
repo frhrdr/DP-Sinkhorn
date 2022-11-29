@@ -239,6 +239,7 @@ def train(models, optimizers, loader, train_step_fn, loss_fn, epoch, global_step
     args.train_losses_mean.append(mean_loss/num_batches)
     return global_step
 
+
 def get_sinkhorn_eps(epoch, args):
     if args.sinkhorn_eps_schedule is None:
         return args.sinkhorn_eps
@@ -247,7 +248,8 @@ def get_sinkhorn_eps(epoch, args):
     return args.sinkhorn_eps_schedule[sinkhorn_eps_idx]
 
 
-def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step, loss_fn, train_writer, val_writer,
+def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step, loss_fn,
+              train_writer, val_writer,
               checkpoint_writer, val_data_name, start_epoch, global_step, args, metadata):
     best_score = 0
     start_time = time.time()
@@ -287,10 +289,14 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             print('| validating for epoch {}, global step {}'.format(e, global_step - 1))
             g.eval()
             with torch.no_grad():
-                val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
+                # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
+                print('val done, starting eval')
                 met = eval(models, val_data_name, global_step, val_writer, args, metadata)
                 #score = met['fid']
-                score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met['cnn_acc_torch']) * 100 / 3 - met['fid']
+                if args.class_cond == 1:
+                    score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met['cnn_acc_torch']) * 100 / 3 - met['fid']
+                else:
+                    score = -met['fid']
             print('| epoch {} validate time: {}'.format(e, time.time() - start_time))
 
             if score > best_score:
@@ -311,7 +317,8 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             print('| validating for epoch {}, global step {}'.format(e, global_step - 1))
             g.eval()
             with torch.no_grad():
-                val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
+                # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
+                print('val done, starting eval')
                 met = eval(models, val_data_name, global_step, val_writer, args, metadata)
                 score = (met['mlp_acc_torch']+met['log_reg_acc_torch']+met['cnn_acc_torch']) * 100 / 3 - met['fid']
             #score = met['fid']
