@@ -289,7 +289,7 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             print('| validating for epoch {}, global step {}'.format(e, global_step - 1))
             g.eval()
             with torch.no_grad():
-                # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
+                val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
                 met = eval(models, val_data_name, global_step, val_writer, args, metadata)
                 #score = met['fid']
@@ -319,9 +319,13 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             with torch.no_grad():
                 # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
-                met = eval(models, val_data_name, global_step, val_writer, args, metadata)
-                score = (met['mlp_acc_torch']+met['log_reg_acc_torch']+met['cnn_acc_torch']) * 100 / 3 - met['fid']
-            #score = met['fid']
+                # met = eval(models, val_data_name, global_step, val_writer, args, metadata)
+                # if args.class_cond == 1:
+                #     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met[
+                #         'cnn_acc_torch']) * 100 / 3 - met['fid']
+                # else:
+                #     score = -met['fid']
+                score = 0.
             print('| epoch {} validate time: {}'.format(e, time.time() - start_time))
             save_sample_img(models, metadata['label_dim'], 10, args, global_step)
             if args.save_every_val:
