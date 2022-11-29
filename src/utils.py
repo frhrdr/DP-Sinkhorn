@@ -26,7 +26,7 @@ from torchvision.utils import save_image
 def add_experiment_args(parser):
 
     # experiment configs
-    parser.add_argument("exp_name", type=str, default='exp')
+    parser.add_argument("--exp_name", type=str, default='exp')
     parser.add_argument("--device", type=str, default='cuda', choices=['cpu', 'cuda', ] +
                                                                       ['cuda:{}'.format(i) for i in range(torch.cuda.device_count())])
     parser.add_argument("--seed", type=int, default=0)
