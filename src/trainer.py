@@ -192,7 +192,7 @@ def eval(models, val_data_name, global_step, writer, args, metadata):
     return met
 
 
-def eval_new(models, global_step, writer, args, metadata, subset_size, batch_size=100):
+def eval_new(models, global_step, writer, args, metadata, subset_size=5000, batch_size=100):
     gen_img, _ = generate(models, num_examples=args.num_g_examples, batch_size=args.g_batch_size,
                           fixed=False, args=args, metadata=metadata)
     print('| generated {} synthetic examples'.format(len(gen_img)))
@@ -411,7 +411,7 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             with torch.no_grad():
                 # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
-                met = eval_new(models, val_data_name, global_step, val_writer, args, metadata)
+                met = eval_new(models, global_step, val_writer, args, metadata)
                 if args.class_cond == 1:
                     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met[
                         'cnn_acc_torch']) * 100 / 3 - met['fid']
