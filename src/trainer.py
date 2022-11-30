@@ -9,11 +9,14 @@ Implement loop for training and invokes visualization and evaluation steps.
 """
 import numpy as np
 import torch
+from tqdm import tqdm
 from .pytorch_fid_utils import compute_fid, fid_preproc
 from .utils import img_sample_plot, histogram_plot, Metric, save_sample_img, print_tensor_prop, PrivacyExceededError
 from .data import fetch_data
 from .train_mnist_classifier import torch_evaluate
 import os, time, json
+from pytorch_fid.inception import InceptionV3
+from pytorch_fid.fid_score import calculate_frechet_distance
 
 
 DEBUG = False
@@ -189,6 +192,95 @@ def eval(models, val_data_name, global_step, writer, args, metadata):
     return met
 
 
+def eval_new(models, global_step, writer, args, metadata, subset_size, batch_size=100):
+    gen_img, _ = generate(models, num_examples=args.num_g_examples, batch_size=args.g_batch_size,
+                          fixed=False, args=args, metadata=metadata)
+    print('| generated {} synthetic examples'.format(len(gen_img)))
+    met = Metric()
+    gen_img = gen_img.to(args.device)
+
+    # fid score
+    # gen_img = (gen_img * 0.5 + 0.5).clamp(0, 1)  # pre-processing
+
+    # fid = compute_fid(gen_img, args)
+    embedding_files = {'imagenet32': 'imagenet32_32.npz',
+                       'celeb': 'celeba_32_normed05.npz',
+                       'cifar10': 'cifar10_32_normed05.npz'}
+    real_data_stats_file = os.path.join('.. /dp-gfmn/data/fid_stats',
+                                        embedding_files[args.dataset])
+    dims = 2048
+
+    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
+
+    model = InceptionV3([block_idx]).to(args.device)
+
+    stats = np.load(real_data_stats_file)
+    mu_real, sig_real = stats['mu'], stats['sig']
+    print('real stats loaded')
+    # load synth dataset
+    data = gen_img[np.random.permutation(gen_img.shape[0])[:subset_size]]
+    synth_data = SynthDataset(data=data, targets=None, to_tensor=False)
+    synth_data_loader = torch.utils.data.DataLoader(synth_data, batch_size=batch_size, shuffle=False,
+                                                  drop_last=False, num_workers=1)
+
+    print('synth data loaded, getting stats')
+    # stats from dataloader
+    model.eval()
+
+    pred_list = []
+    start_idx = 0
+
+    for batch in tqdm(synth_data_loader):
+        x = batch[0] if (isinstance(batch, tuple) or isinstance(batch, list)) else batch
+        x = x.to(args.device)
+
+        with torch.no_grad():
+            pred = model(x)[0]
+
+        # If model output is not scalar, apply global spatial average pooling.
+        # This happens if you choose a dimensionality not equal 2048.
+        if pred.size(2) != 1 or pred.size(3) != 1:
+            pred = torch.nn.adaptive_avg_pool2d(pred, output_size=(1, 1))
+
+        pred = pred.squeeze(3).squeeze(2).cpu().numpy()
+
+        # pred_arr[start_idx:start_idx + pred.shape[0]] = pred
+        pred_list.append(pred)
+
+        start_idx = start_idx + pred.shape[0]
+
+    pred_arr = np.concatenate(pred_list, axis=0)
+    # return pred_arr
+    mu_syn = np.mean(pred_arr, axis=0)
+    sig_syn = np.cov(pred_arr, rowvar=False)
+
+    fid = calculate_frechet_distance(mu_real, sig_real, mu_syn, sig_syn)
+    met['fid'] = fid
+    met.print_metric()
+    met.publish(writer, global_step - 1)
+
+    return met
+
+
+class SynthDataset(torch.utils.data.Dataset):
+  def __init__(self, data, targets, to_tensor):
+    self.labeled = targets is not None
+    self.data = data
+    self.targets = targets
+    self.to_tensor = to_tensor
+
+  def __len__(self):
+    return len(self.data)
+
+  def __getitem__(self, idx):
+    d = torch.tensor(self.data[idx], dtype=torch.float32) if self.to_tensor else self.data[idx]
+    if self.labeled:
+      t = torch.tensor(self.targets[idx], dtype=torch.long) if self.to_tensor else self.targets[idx]
+      return d, t
+    else:
+      return d
+
+
 def val(models, loader, val_step_fn, loss_fn, epoch, global_step, writer, args, metadata):
     num_batches = len(loader)
     met = Metric()
@@ -291,7 +383,7 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             with torch.no_grad():
                 val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
-                met = eval(models, val_data_name, global_step, val_writer, args, metadata)
+                met = eval_new(models, val_data_name, global_step, val_writer, args, metadata)
                 #score = met['fid']
                 if args.class_cond == 1:
                     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met['cnn_acc_torch']) * 100 / 3 - met['fid']
@@ -319,13 +411,13 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             with torch.no_grad():
                 # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
-                # met = eval(models, val_data_name, global_step, val_writer, args, metadata)
-                # if args.class_cond == 1:
-                #     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met[
-                #         'cnn_acc_torch']) * 100 / 3 - met['fid']
-                # else:
-                #     score = -met['fid']
-                score = 0.
+                met = eval_new(models, val_data_name, global_step, val_writer, args, metadata)
+                if args.class_cond == 1:
+                    score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met[
+                        'cnn_acc_torch']) * 100 / 3 - met['fid']
+                else:
+                    score = -met['fid']
+
             print('| epoch {} validate time: {}'.format(e, time.time() - start_time))
             save_sample_img(models, metadata['label_dim'], 10, args, global_step)
             if args.save_every_val:

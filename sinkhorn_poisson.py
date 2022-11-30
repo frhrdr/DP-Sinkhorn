@@ -212,7 +212,7 @@ if __name__ == '__main__':
     parser.add_argument("--debias", default=False, action='store_true')
     parser.add_argument("--debias_ratio", type=float, default=1.0)
     parser.add_argument("--target_epsilon", type=float, default=0.0)
-    parser.add_argument("--num_g_examples", type=int, default=10000, help='number of examples generated for validation')
+    parser.add_argument("--num_g_examples", type=int, default=5000, help='number of examples generated for validation')
     parser.add_argument("--g_batch_size", type=int, default=200, help='batch size for validation generation')
     parser.add_argument("--class_cond", default=1, type=int, help='1 to do class conditional generation, 0 for no cond')
     # training hyper params
@@ -240,6 +240,8 @@ if __name__ == '__main__':
     # sinkhorn cost
     parser.add_argument("--cost", default="l1+l2", choices=['default', 'rkhs', 'adv_only', 'weighted', 'l1+l2'])
     parser.add_argument("--mixture_fraction", default=1.0, type=float)
+
+    parser.add_argument('--n_final_dataset_samples', type=int, default=5_000)
 
     # privacy params
     parser = add_privacy_args(parser)
