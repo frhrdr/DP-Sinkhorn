@@ -203,10 +203,10 @@ def eval_new(models, global_step, writer, args, metadata, subset_size=5000, batc
     # gen_img = (gen_img * 0.5 + 0.5).clamp(0, 1)  # pre-processing
 
     # fid = compute_fid(gen_img, args)
-    embedding_files = {'imagenet32': 'imagenet32_32.npz',
-                       'celeb': 'celeba_32_normed05.npz',
+    embedding_files = {'imagenet_32_2': 'imagenet32.npz',
+                       'celeb_32_2': 'celeba_32_normed05.npz',
                        'cifar10': 'cifar10_32_normed05.npz'}
-    real_data_stats_file = os.path.join('.. /dp-gfmn/data/fid_stats',
+    real_data_stats_file = os.path.join('../dp-gfmn/data/fid_stats',
                                         embedding_files[args.dataset])
     dims = 2048
 
@@ -218,10 +218,11 @@ def eval_new(models, global_step, writer, args, metadata, subset_size=5000, batc
     mu_real, sig_real = stats['mu'], stats['sig']
     print('real stats loaded')
     # load synth dataset
-    data = gen_img[np.random.permutation(gen_img.shape[0])[:subset_size]]
+    data = gen_img[np.random.permutation(gen_img.shape[0])[:subset_size]].cpu()
+    print(data.shape, type(data))
     synth_data = SynthDataset(data=data, targets=None, to_tensor=False)
     synth_data_loader = torch.utils.data.DataLoader(synth_data, batch_size=batch_size, shuffle=False,
-                                                  drop_last=False, num_workers=1)
+                                                    drop_last=False, num_workers=1)
 
     print('synth data loaded, getting stats')
     # stats from dataloader
@@ -349,10 +350,10 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
     g = models['g']
     if DEBUG:
         g.eval()
-        with torch.no_grad():
-            val(models, val_loader, val_step, loss_fn, epoch, global_step, val_writer, args, metadata)
-        met = eval(models, val_data_name, global_step, val_writer, args, metadata)
-        score = met['fid']
+        # with torch.no_grad():
+        #     val(models, val_loader, val_step, loss_fn, epoch, global_step, val_writer, args, metadata)
+        met = eval_new(models, global_step, val_writer, args, metadata)
+        score = -met['fid']
         print('| epoch {} validate time: {}'.format(epoch, time.time() - start_time))
 
     args.train_losses = []
@@ -383,7 +384,7 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
             with torch.no_grad():
                 val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
-                met = eval_new(models, val_data_name, global_step, val_writer, args, metadata)
+                met = eval_new(models, global_step, val_writer, args, metadata)
                 #score = met['fid']
                 if args.class_cond == 1:
                     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met['cnn_acc_torch']) * 100 / 3 - met['fid']
