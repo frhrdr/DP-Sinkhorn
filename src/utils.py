@@ -92,7 +92,7 @@ def experiment_init(args):
     epoch = 1
     global_step = 1
     state_dict = None
-    default_path = os.path.join(args.expdir, 'ck.pt')
+    default_path = os.path.join(expdir, 'ck.pt')
     if args.checkpoint_path is not None:
         print('| loading checkpoint at {}'.format(args.checkpoint_path))
         epoch, global_step, state_dict = load_checkpoint(args.checkpoint_path, args)
