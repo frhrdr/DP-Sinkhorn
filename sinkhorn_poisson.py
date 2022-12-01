@@ -187,8 +187,9 @@ def val_step(models, img, label, loss_fn, args, metadata):
 
     return loss_mets
 
+
 def get_checkpoint_writer(args, models, optimizers):
-    def writer(score, epoch, global_step):
+    def writer(score, epoch, global_step, file_name_overwrite=None):
         save_checkpoint(args.expdir,
                         {'g': models['g'].state_dict(),
                          'g_optimizer': optimizers['g_optimizer'].state_dict(),
@@ -197,7 +198,7 @@ def get_checkpoint_writer(args, models, optimizers):
                          },
                         score,
                         epoch, global_step,
-                        args)
+                        args, file_name=file_name_overwrite)
     return writer
 
 if __name__ == '__main__':
@@ -242,6 +243,7 @@ if __name__ == '__main__':
     parser.add_argument("--mixture_fraction", default=1.0, type=float)
 
     parser.add_argument('--n_final_dataset_samples', type=int, default=5_000)
+
 
     # privacy params
     parser = add_privacy_args(parser)
@@ -349,14 +351,14 @@ if __name__ == '__main__':
     if args.sampling == 'poisson':
         train_loader = DataLoader(dataset=IndexedDataset(train_data),
                                   shuffle=False,
-                                  num_workers=8,
+                                  num_workers=args.n_loader_workers,
                                   pin_memory=True,
                                   batch_sampler=IIDBatchSampler(train_data, args.batch_size, num_batches_per_epoch))
     elif args.sampling == 'subset':
         train_loader = DataLoader(dataset=IndexedDataset(train_data),
                                   batch_size=args.batch_size,
                                   shuffle=True,
-                                  num_workers=2)
+                                  num_workers=args.n_loader_workers)
     else:
         raise ValueError
 

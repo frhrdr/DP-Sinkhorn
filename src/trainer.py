@@ -429,6 +429,11 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
                 if not args.save_every_val:
                     checkpoint_writer(1, 'best', 1)
 
+        if e % args.restart_interval == 0:
+            checkpoint_writer(score, e, global_step, file_name_overwrite='ck.pt')
+            print(f'shutting down for restart after epoch {e}')
+            exit(3)
+
     checkpoint_writer(1, 'last', 1)
     save_sample_img(models, metadata['label_dim'], 10, args, -1)
     np.save(os.path.join(args.expdir, 'losses.npy'), np.array(args.train_losses))

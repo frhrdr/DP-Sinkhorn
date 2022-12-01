@@ -35,19 +35,24 @@ def add_experiment_args(parser):
     parser.add_argument("--checkpoint_path", type=str, default = None)
     parser.add_argument("--num_epochs", type = int, default = 500)
 
-    parser.add_argument("--val_interval", type=int, default = 50)
-    parser.add_argument("--print_interval", type=int, default=20)
+    parser.add_argument("--print_interval", type=int, default=100)  # for steps. rest for epochs
+    parser.add_argument("--val_interval", type=int, default = 20)
     parser.add_argument("--vis_interval", type=int, default=10, help="run visualization every interval epochs")
     parser.add_argument("--num_vis_examples", type=int, default=20)
+    parser.add_argument("--restart_interval", type=int, default=10)
+
     return parser
 
-def save_checkpoint(path, state_dict, score, epoch, global_step, args):
+
+def save_checkpoint(path, state_dict, score, epoch, global_step, args, file_name=None):
+    if file_name is None:
+        file_name = f"{epoch}_{global_step}_{score:.5f}.pt"
     torch.save({
         'args': vars(args),
         'state_dict': state_dict,
         'epoch': epoch,
         'global_step': global_step
-    }, os.path.join(path, "{}_{}_{:.5f}.pt".format(epoch, global_step, score)))
+    }, os.path.join(path, file_name))
 
 
 def load_checkpoint(path, args):
@@ -78,19 +83,29 @@ def get_expdir(exp_name, resultdir = 'workspace/runs/mnist'):
 
 
 def experiment_init(args):
+    # logging
+    expdir = args.override_expdir if args.override_expdir is not None else get_expdir(args.exp_name,
+                                                                                      args.resultdir)
+    os.makedirs(expdir, exist_ok=True)
 
     # checkpoint loading
     epoch = 1
     global_step = 1
     state_dict = None
+    default_path = os.path.join(args.expdir, 'ck.pt')
     if args.checkpoint_path is not None:
         print('| loading checkpoint at {}'.format(args.checkpoint_path))
         epoch, global_step, state_dict = load_checkpoint(args.checkpoint_path, args)
         print('| restart training at epoch {}, global step {}'.format(epoch, global_step))
+    elif os.path.exists(default_path):
+        epoch, global_step, state_dict = load_checkpoint(default_path, args)
+        print('| restart training at epoch {}, global step {}'.format(epoch, global_step))
+    else:
+        print('| no checkpoint found. starting from scratch')
 
-    # logging
-    expdir = args.override_expdir if args.override_expdir is not None else get_expdir(args.exp_name, args.resultdir)
-    os.makedirs(expdir, exist_ok=True)
+    # # logging
+    # expdir = args.override_expdir if args.override_expdir is not None else get_expdir(args.exp_name, args.resultdir)
+    # os.makedirs(expdir, exist_ok=True)
 
     # write original arguments to text file
     arg_strs = []

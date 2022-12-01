@@ -20,6 +20,7 @@ def add_data_args(parser):
                         choices=['mnist', 'fashion_mnist', 'cifar', 'svhn', 'svhn_28', 'celeb_32', 'celeb_32_2',
                                  'stackedmnist', 'mnist_bce', 'fashion_mnist_bce', 'imagenet_32_2', 'imagenet_32_10'], default='mnist')
     parser.add_argument("--datadir", type = str, default='datasets')
+    parser.add_argument('n_loader_workers', type=int, default=4)
     return parser
 
 
