@@ -431,7 +431,7 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
                     checkpoint_writer(1, 'best', 1)
 
         if e % args.restart_interval == 0:
-            checkpoint_writer(score, e, global_step, file_name_overwrite='ck.pt')
+            checkpoint_writer(score, e + 1, global_step, file_name_overwrite='ck.pt')
             print(f'shutting down for restart after epoch {e}')
             print(f'current best score is {best_score}')
             exit(3)
