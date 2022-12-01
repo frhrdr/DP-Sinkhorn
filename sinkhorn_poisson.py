@@ -266,7 +266,7 @@ if __name__ == '__main__':
     val_data, metadata = fetch_data(args.dataset, args.datadir, training=False, download=False, as_array=False, num_examples=0)
     # generator
     g = build_generator(args, metadata['img_dim'], metadata['label_dim']).to(args.device)
-    assert args.sampling == 'poisson'
+
     num_batches_per_epoch = int(len(train_data) / args.batch_size)
 
     if args.adv:
@@ -346,11 +346,19 @@ if __name__ == '__main__':
                                  weight_decay=0.05 * args.d_lr,
                                  lr=args.d_lr)
 
-    train_loader = DataLoader(dataset=IndexedDataset(train_data),
-                              shuffle=False,
-                              num_workers=8,
-                              pin_memory=True,
-                              batch_sampler=IIDBatchSampler(train_data, args.batch_size, num_batches_per_epoch))
+    if args.sampling == 'poisson':
+        train_loader = DataLoader(dataset=IndexedDataset(train_data),
+                                  shuffle=False,
+                                  num_workers=8,
+                                  pin_memory=True,
+                                  batch_sampler=IIDBatchSampler(train_data, args.batch_size, num_batches_per_epoch))
+    elif args.sampling == 'subset':
+        train_loader = DataLoader(dataset=IndexedDataset(train_data),
+                                  batch_size=args.batch_size,
+                                  shuffle=True,
+                                  num_workers=2)
+    else:
+        raise ValueError
 
     if args.optimizer == 'sgd':
         g_optimizer = torch.optim.SGD(params=g.parameters(), lr=args.lr, weight_decay=1e-5)

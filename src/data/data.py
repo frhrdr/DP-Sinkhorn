@@ -266,6 +266,7 @@ class DualBatchSampler:
     def __len__(self):
         return self.num_iterations
 
+
 class IIDBatchSampler:
     def __init__(self, dataset, batch_size, num_iterations):
         self.length = len(dataset)
