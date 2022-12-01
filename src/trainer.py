@@ -344,7 +344,8 @@ def get_sinkhorn_eps(epoch, args):
 def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step, loss_fn,
               train_writer, val_writer,
               checkpoint_writer, val_data_name, start_epoch, global_step, args, metadata):
-    best_score = 0
+    best_score = -1e8
+    score = best_score
     start_time = time.time()
     epoch = start_epoch
     g = models['g']
@@ -432,6 +433,7 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
         if e % args.restart_interval == 0:
             checkpoint_writer(score, e, global_step, file_name_overwrite='ck.pt')
             print(f'shutting down for restart after epoch {e}')
+            print(f'current best score is {best_score}')
             exit(3)
 
     checkpoint_writer(1, 'last', 1)
