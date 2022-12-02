@@ -108,7 +108,7 @@ def vis(models, val_data_name, global_step, writer, args, metadata):
         print_tensor_prop(val_img, val_label)
     met = Metric()
 
-    if args.dataset in ['cifar', 'svhn', 'svhn_28', 'celeb_32', 'stackedmnist', 'celeb_32_2']:
+    if args.dataset in ['cifar', 'svhn', 'svhn_28', 'celeb_32', 'stackedmnist', 'celeb_32_2', 'imagenet_32_2']:
         gen_img = gen_img.numpy().transpose((0, 2, 3, 1))   # swap to W x H x Channel Dim
         fixed_gen_img = fixed_gen_img.numpy().transpose((0, 2, 3, 1))
         val_img = val_img.transpose((0, 2, 3, 1))
@@ -387,10 +387,10 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
                 print('val done, starting eval')
                 met = eval_new(models, global_step, val_writer, args, metadata)
                 #score = met['fid']
-                if args.class_cond == 1:
-                    score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met['cnn_acc_torch']) * 100 / 3 - met['fid']
-                else:
-                    score = -met['fid']
+                # if args.class_cond == 1:
+                #     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met['cnn_acc_torch']) * 100 / 3 - met['fid']
+                # else:
+                score = -met['fid']
             print('| epoch {} validate time: {}'.format(e, time.time() - start_time))
 
             if score > best_score:
@@ -414,11 +414,14 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
                 # val(models, val_loader, val_step, loss_fn, e, global_step, val_writer, args, metadata)
                 print('val done, starting eval')
                 met = eval_new(models, global_step, val_writer, args, metadata)
-                if args.class_cond == 1:
-                    score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met[
-                        'cnn_acc_torch']) * 100 / 3 - met['fid']
-                else:
-                    score = -met['fid']
+                # if args.class_cond == 1:
+                #     score = (met['mlp_acc_torch'] + met['log_reg_acc_torch'] + met[
+                #         'cnn_acc_torch']) * 100 / 3 - met['fid']
+                # else:
+                score = -met['fid']
+
+            with open(os.path.join(args.expdir, f"fid_ep_{e}.json"), "w") as f:
+                json.dump({'fid': met['fid']}, f)
 
             print('| epoch {} validate time: {}'.format(e, time.time() - start_time))
             save_sample_img(models, metadata['label_dim'], 10, args, global_step)
@@ -429,6 +432,8 @@ def main_loop(models, optimizers, train_loader, val_loader, train_step, val_step
                 best_score = score
                 if not args.save_every_val:
                     checkpoint_writer(1, 'best', 1)
+                with open(os.path.join(args.expdir, f"fid_best.json"), "w") as f:
+                    json.dump({'fid': -best_score, 'epoch': e}, f)
 
         if e % args.restart_interval == 0:
             checkpoint_writer(score, e + 1, global_step, file_name_overwrite='ck.pt')
