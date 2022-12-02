@@ -329,6 +329,10 @@ def train(models, optimizers, loader, train_step_fn, loss_fn, epoch, global_step
             print('| epoch {}, step {}/{}, global step {}:'.format(epoch, i, num_batches, global_step),
                   met.make_string())
         global_step += 1
+
+        if args.max_n_iter_per_epoch is not None and i >= args.max_n_iter_per_epoch:
+            break
+
     args.train_losses_mean.append(mean_loss/num_batches)
     return global_step
 

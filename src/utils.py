@@ -40,7 +40,7 @@ def add_experiment_args(parser):
     parser.add_argument("--vis_interval", type=int, default=10, help="run visualization every interval epochs")
     parser.add_argument("--num_vis_examples", type=int, default=20)
     parser.add_argument("--restart_interval", type=int, default=10)
-
+    parser.add_argument('--max_n_iter_per_epoch', type=int, default=None)
     return parser
 
 
