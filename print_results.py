@@ -14,7 +14,7 @@ def main():
           print(f'{subdir}')
           first_print = False
         with open(os.path.join(subdir, file)) as f:
-          print(f'{file}: {f.readline(file)}')
+          print(f'{file}: {f.readline()}')
 
 
 if __name__ == '__main__':
