@@ -243,7 +243,7 @@ if __name__ == '__main__':
     parser.add_argument("--mixture_fraction", default=1.0, type=float)
 
     parser.add_argument('--n_final_dataset_samples', type=int, default=5_000)
-
+    parser.add_argument('--load_model_only', default=False, action="store_true")
 
     # privacy params
     parser = add_privacy_args(parser)
@@ -391,10 +391,12 @@ if __name__ == '__main__':
     # load state dicts for optimizer and generator
     if state_dict is not None:
         g.load_state_dict(state_dict['g'])
-        g_optimizer.load_state_dict(state_dict['g_optimizer'])
+        if not args.load_model_only:
+            g_optimizer.load_state_dict(state_dict['g_optimizer'])
         if args.adv:
             d.load_state_dict(state_dict['d'])
-            d_optimizer.load_state_dict(state_dict['d_optimizer'])
+            if not args.load_model_only:
+                d_optimizer.load_state_dict(state_dict['d_optimizer'])
 
     models = {'g': g, 'd': d}
     optimizers = {'g_optimizer': g_optimizer, 'd_optimizer': d_optimizer}
