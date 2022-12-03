@@ -12,7 +12,7 @@ def add_generator_args(parser):
     parser.add_argument("--g_type", default='joint',
                         choices=[ConvCondGenerator.tag(),
                                  ConvCondSqGenerator.tag(),
-                                 BigGan.tag()])
+                                 BigGan.tag(), 'resnetG'])
     parser.add_argument("--embed_dim", type=int, default=2)
     parser.add_argument("--latent_dim", type=int, default=12)
     parser.add_argument("--hidden_dim", type=int, default=64)
@@ -47,7 +47,7 @@ def build_generator(args, img_dim, label_dim):
             )
 
     elif args.g_type == 'resnetG':
-      g = ResnetG(args.latent_dim, img_dim, 64, 32, True, False, 'tanh')
+      g = ResnetG(args.latent_dim, 3, 64, 32, True, False, 'tanh')
     else:
       raise ValueError
 

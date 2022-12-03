@@ -77,7 +77,7 @@ class ResnetG(nn.Module):
   def __init__(self, enc_size, nc, ndf, image_size=32, adapt_filter_size=False,
                use_conv_at_skip_conn=False, gen_output='tanh'):
     super(ResnetG, self).__init__()
-    self.enc_size = enc_size
+    self.latent_dim = enc_size
     self.ndf = ndf
     self.gen_output = gen_output
 
@@ -118,9 +118,17 @@ class ResnetG(nn.Module):
 
     self.net = nn.Sequential(nn_layers)
 
-  def forward(self, x):
-    return self.net(x)
+  def forward(self, x, _y=None):
+    return self.net(x[:, :, None, None])
 
+  def name(self):
+    return 'resnetG'
+
+  def num_trainable_params(self):
+    return 10
+
+  def latent_dim(self):
+    return self.latent_dim
 
 class Upsample(nn.Module):
   def __init__(self, scale_factor=2, size=None):
