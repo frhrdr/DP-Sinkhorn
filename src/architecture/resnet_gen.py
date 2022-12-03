@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from math import log
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as nnf
@@ -128,11 +128,17 @@ class ResnetG(nn.Module):
   def name(self):
     return 'resnetG'
 
-  def num_trainable_params(self):
-    return 10
-
   def latent_dim(self):
     return self.latent_dim
+
+  def to(self, device):
+    self.z = self.z.to(device)
+    self.label = self.label.to(device)
+    return super(ResnetG, self).to(device)
+
+  @property
+  def num_trainable_params(self):
+    return np.sum([np.prod(p.size()) for p in filter(lambda p: p.requires_grad, self.parameters())])
 
   def sample_labelled(self, z, label):
     # unconditioned samples
