@@ -47,7 +47,7 @@ def build_generator(args, img_dim, label_dim):
             )
 
     elif args.g_type == 'resnetG':
-      g = ResnetG(args.latent_dim, 3, 64, 32, True, False, 'tanh')
+      g = ResnetG(args.latent_dim, 3, 64, 32, True, False, 'tanh', num_vis_examples=args.num_vis_examples, label_dim=label_dim)
     else:
       raise ValueError
 

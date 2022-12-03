@@ -75,11 +75,14 @@ class DeconvDecoder(nn.Module):
 
 class ResnetG(nn.Module):
   def __init__(self, enc_size, nc, ndf, image_size=32, adapt_filter_size=False,
-               use_conv_at_skip_conn=False, gen_output='tanh'):
+               use_conv_at_skip_conn=False, gen_output='tanh', num_vis_examples=1, label_dim=2):
     super(ResnetG, self).__init__()
     self.latent_dim = enc_size
     self.ndf = ndf
     self.gen_output = gen_output
+    self.label_dim = label_dim
+    self.z = torch.rand(num_vis_examples, self.latent_dim)
+    self.label = torch.randint(self.label_dim, (num_vis_examples,))
 
     if adapt_filter_size is True and use_conv_at_skip_conn is False:
       use_conv_at_skip_conn = True
@@ -129,6 +132,15 @@ class ResnetG(nn.Module):
 
   def latent_dim(self):
     return self.latent_dim
+
+  def sample_labelled(self, z, label):
+    # unconditioned samples
+    gen_img = self(z, None)
+    gen_label = label
+    return gen_img, gen_label
+
+  def sample_labelled_fixed(self):
+    return self.sample_labelled(self.z, self.label)
 
 class Upsample(nn.Module):
   def __init__(self, scale_factor=2, size=None):
