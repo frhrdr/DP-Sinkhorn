@@ -81,6 +81,7 @@ class ResnetG(nn.Module):
     self.ndf = ndf
     self.gen_output = gen_output
     self.label_dim = label_dim
+    self.num_vis_examples = num_vis_examples
     self.z = torch.rand(num_vis_examples, self.latent_dim)
     self.label = torch.randint(self.label_dim, (num_vis_examples,))
 
