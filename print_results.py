@@ -6,9 +6,9 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--dir", type=str)
   args = parser.parse_args()
-  for subdir in os.walk(args.dir):
+  for subdir, subsubdirs, files in os.walk(args.dir):
     first_print = True
-    for file in os.listdir(subdir):
+    for file in files:
       if file.startswith('fid_ep_'):
         if first_print:
           print(f'{subdir}')
