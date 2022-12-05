@@ -93,15 +93,15 @@ def experiment_init(args):
     global_step = 1
     state_dict = None
     default_path = os.path.join(expdir, 'ck.pt')
-    if args.checkpoint_path is not None:
+    if os.path.exists(default_path):
+        epoch, global_step, state_dict = load_checkpoint(default_path, args)
+        print('| restart training at epoch {}, global step {}'.format(epoch, global_step))
+    elif args.checkpoint_path is not None:
         print('| loading checkpoint at {}'.format(args.checkpoint_path))
         if args.load_model_only:
             _, _, state_dict = load_checkpoint(args.checkpoint_path, args)
         else:
             epoch, global_step, state_dict = load_checkpoint(args.checkpoint_path, args)
-        print('| restart training at epoch {}, global step {}'.format(epoch, global_step))
-    elif os.path.exists(default_path):
-        epoch, global_step, state_dict = load_checkpoint(default_path, args)
         print('| restart training at epoch {}, global step {}'.format(epoch, global_step))
     else:
         print('| no checkpoint found. starting from scratch')
